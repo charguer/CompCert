@@ -171,7 +171,9 @@ and stmt_desc env = function
   | Sswitch(a, s) -> Sswitch(exp env a, stmt env s)
   | Slabeled(lbl, s) -> Slabeled(slabel env lbl, stmt env s)
   | Sgoto lbl -> Sgoto lbl
-  | Sreturn a -> Sreturn (optexp env a)
+  | Sreturn None -> Sreturn None
+  | Sreturn (Some (Init_single a)) -> Sreturn (Some (Init_single (exp env a)))
+  | Sreturn (Some _) -> failwith "Cleanup: support for return of compound initializers not supported"
   | Sblock sl -> let (sl', _) = mmap stmt_or_decl env sl in Sblock sl'
   | Sdecl d -> assert false
   | Sasm(attr, txt, outputs, inputs, flags) ->

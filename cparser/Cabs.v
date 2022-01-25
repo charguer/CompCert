@@ -215,7 +215,7 @@ with statement :=
  | FOR : option for_clause -> option expression -> option expression -> statement -> loc -> statement
  | BREAK : loc -> statement
  | CONTINUE : loc -> statement
- | RETURN : option expression (* OPTITRUST init_expression *) -> loc -> statement
+ | RETURN : init_expression -> loc -> statement (* OptiTrust generalized from "option expression" *)
  | SWITCH : expression -> statement -> loc -> statement
  | CASE : expression -> statement -> loc -> statement
  | DEFAULT : statement -> loc -> statement

@@ -813,7 +813,7 @@ jump_statement:
 | GOTO other_identifier SEMICOLON
 | CONTINUE SEMICOLON
 | BREAK SEMICOLON
-| RETURN expression? SEMICOLON
+| RETURN c_initializer? SEMICOLON (* OptiTrust generalized from expression? *)
     {}
 
 asm_statement:

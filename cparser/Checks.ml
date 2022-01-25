@@ -32,7 +32,8 @@ let fold_over_stmt_loc ~(expr: 'a -> location -> exp -> 'a)
     | Slabeled(_, s1) -> fold a s1
     | Sgoto _ -> a
     | Sreturn None -> a
-    | Sreturn (Some e) -> expr a s.sloc e
+    | Sreturn (Some (Init_single e)) -> expr a s.sloc e
+    | Sreturn (Some _) -> failwith "Cleanup: support for return of compound initializers not supported"
     | Sasm(_, _, outs, ins, _) -> asm_operands (asm_operands a s.sloc outs) s.sloc ins
     | Sdo e -> expr a s.sloc e
     | Sif (e, s1, s2) -> fold (fold (expr a s.sloc e) s1) s2

@@ -98,7 +98,8 @@ let rec add_stmt s =
       add_stmt s
   | Sgoto lbl -> ()
   | Sreturn None -> ()
-  | Sreturn(Some e) -> add_exp e
+  | Sreturn(Some (Init_single e)) -> add_exp e
+  | Sreturn(Some _) -> failwith "Cleanup: support for return of compound initializers not supported"
   | Sblock sl -> List.iter add_stmt sl
   | Sdecl d -> add_decl d
   | Sasm(attr, template, outputs, inputs, flags) ->

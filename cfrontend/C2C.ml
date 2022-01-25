@@ -1146,8 +1146,9 @@ let rec convertStmt env s =
       Csyntax.Sgoto(intern_string lbl)
   | C.Sreturn None ->
       Csyntax.Sreturn None
-  | C.Sreturn(Some e) ->
+  | C.Sreturn(Some (C.Init_single e)) ->
       Csyntax.Sreturn(Some(convertExpr env e))
+  | C.Sreturn(Some _) -> failwith "Cleanup: support for return of compound initializers not supported"
   | C.Sblock _ ->
       unsupported "nested blocks"; Csyntax.Sskip
   | C.Sdecl _ ->

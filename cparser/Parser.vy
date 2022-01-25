@@ -891,10 +891,10 @@ jump_statement:
     { Cabs.CONTINUE loc }
 | loc = BREAK SEMICOLON
     { Cabs.BREAK loc }
-| loc = RETURN expr = (*c_initializer  OptiTrust genralized from *) expression  SEMICOLON
-    { Cabs.RETURN (Some (fst expr)) loc }
+| loc = RETURN init = c_initializer SEMICOLON  (* OptiTrust generalized from "RETURN expression" *)
+    { Cabs.RETURN init loc }
 | loc = RETURN SEMICOLON
-    { Cabs.RETURN None loc } (* OptiTrust changed to NO_INIT *)
+    { Cabs.RETURN Cabs.NO_INIT loc }
 
 (* Non-standard *)
 asm_statement:

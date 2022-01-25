@@ -468,11 +468,11 @@ let rec transf_stmt s =
       {s with sdesc = Slabeled(lbl, transf_stmt s1)}
   | Sgoto lbl -> s
   | Sreturn None -> s
-  | Sreturn(Some e) ->
+  | Sreturn(Some (Init_single e)) ->
       let e' = transf_expr Val e in
       begin match classify_return env e'.etyp, optres with
       | Ret_scalar, None ->
-          {s with sdesc = Sreturn(Some e')}
+          {s with sdesc = Sreturn(Some (Init_single e'))}
       | Ret_ref, Some dst ->
           sseq s.sloc
             (sassign s.sloc dst e')
@@ -482,16 +482,17 @@ let rec transf_stmt s =
             let tmp = new_temp ~name:"_res" ucharptr in
             sseq s.sloc
               (sassign s.sloc tmp (ecast ucharptr (eaddrof e')))
-              {sdesc = Sreturn (Some (load_result tmp sz al)); sloc = s.sloc}
+              {sdesc = Sreturn (Some (Init_single(load_result tmp sz al))); sloc = s.sloc}
           end else begin
             let dst = new_temp ~name:"_res" ty in
             sseq s.sloc
               (sassign s.sloc (ereinterpret e'.etyp dst) e')
-              {sdesc = Sreturn (Some dst); sloc = s.sloc}
+              {sdesc = Sreturn (Some (Init_single dst)); sloc = s.sloc}
           end
       | _, _ ->
           assert false
       end
+  | Sreturn(Some _) -> failwith "StructPassing: support for return of compound initializers not supported"
   | Sblock sl ->
       {s with sdesc = Sblock(List.map transf_stmt sl)}
   | Sdecl d ->

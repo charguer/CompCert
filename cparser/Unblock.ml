@@ -308,9 +308,10 @@ let rec unblock_stmt env ctx ploc s =
       add_lineno ctx ploc s.sloc s
   | Sreturn None ->
       add_lineno ctx ploc s.sloc s
-  | Sreturn (Some e) ->
+  | Sreturn (Some (Init_single e)) ->
       add_lineno ctx ploc s.sloc
-        {s with sdesc = Sreturn(Some (expand_expr true env e))}
+        {s with sdesc = Sreturn(Some (Init_single (expand_expr true env e)))}
+  | Sreturn(Some _) -> failwith "Unblock: support for return of compound initializers not supported"
   | Sblock sl ->
       let ctx' =
         if block_contains_decl sl
