@@ -703,7 +703,9 @@ direct_declarator:
    list of [pointer1]'s, we write [pointer1*]. *)
 
 %inline pointer1:
-  STAR type_qualifier_list?
+| STAR type_qualifier_list?
+    {}
+| AND type_qualifier_list? (* OptiTrust adds support for references *)
     {}
 
 %inline pointer:

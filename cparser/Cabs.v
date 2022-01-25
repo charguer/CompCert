@@ -83,6 +83,7 @@ with decl_type :=
  | JUSTBASE
  | ARRAY : decl_type -> list cvspec -> option expression -> decl_type
  | PTR : list cvspec -> decl_type -> decl_type
+ | REF : decl_type -> decl_type (* OptiTrust adds support for reference types *)
 (* The bool is true for variable length parameters. *)
  | PROTO : decl_type -> list parameter * bool -> decl_type
  | PROTO_OLD : decl_type -> list string -> decl_type

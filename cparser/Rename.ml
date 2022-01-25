@@ -89,6 +89,7 @@ let ident env id =
 
 let rec typ env = function
   | TPtr(ty, a) -> TPtr(typ env ty, a)
+  | TRef _ -> failwith "Rename: reference types are not supported"
   | TArray(ty, sz, a) -> TArray(typ env ty, sz, a)
   | TFun(res, None, va, a) -> TFun(typ env res, None, va, a)
   | TFun(res, Some p, va, a) ->

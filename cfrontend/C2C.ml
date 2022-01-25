@@ -544,6 +544,7 @@ let rec convertTyp env ?bitwidth t =
       convertFkind fk (convertAttr a)
   | C.TPtr(ty, a) ->
       Tpointer(convertTyp env ty, convertAttr a)
+  | C.TRef _ -> failwith "C2C: reference types are not supported"
   | C.TArray(ty, None, a) ->
       (* Cparser verified that the type ty[] occurs only in
          contexts that are safe for Clight, so just treat as ty[0]. *)

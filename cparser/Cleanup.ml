@@ -42,6 +42,7 @@ let needed id =
 
 let rec add_typ = function
   | TPtr(ty, _) -> add_typ ty
+  | TRef _ -> failwith "Cleanup: reference types are not supported"
   | TArray(ty, _, _) -> add_typ ty
   | TFun(res, None, _, _) -> add_typ res
   | TFun(res, Some params, _, _) -> add_typ res; add_vars params

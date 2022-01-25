@@ -636,6 +636,8 @@ direct_declarator:
       Cabs.Name name (Cabs.PROTO_OLD typ (rev' params)) attr loc }
 
 pointer:
+| loc = AND (* OptiTrust adds support for references *)
+    { (fun typ => Cabs.REF typ, loc) }
 | loc = STAR
     { (fun typ => Cabs.PTR [] typ, loc) }
 | loc = STAR quallst = type_qualifier_list
