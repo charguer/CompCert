@@ -171,11 +171,11 @@ module Target : TARGET =
 
 (*
     let print_location oc loc =
-      if loc <> Cutil.no_loc then print_file_line oc (fst loc) (snd loc)
+      if loc <> C.no_loc then print_file_line oc (fst loc) (snd loc)
 *)
 
 (* Add "w" suffix to 32-bit instructions if we are in 64-bit mode *)
-  
+
     let w oc =
       if Archi.ptr64 then output_string oc "w"
 
@@ -313,7 +313,7 @@ module Target : TARGET =
          fprintf oc "	srl	%a, %a, %a\n" ireg rd ireg0 rs1 ireg0 rs2
       | Psral(rd, rs1, rs2) -> assert Archi.ptr64;
          fprintf oc "	sra	%a, %a, %a\n" ireg rd ireg0 rs1 ireg0 rs2
-  
+
       (* Unconditional jumps.  Links are always to X1/RA. *)
       (* TODO: fix up arguments for calls to variadics, to move *)
       (* floating point arguments to integer registers.  How? *)

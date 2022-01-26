@@ -35,7 +35,7 @@ module Printer(Target:TARGET) =
         ()
 
     let print_location oc loc =
-      if loc <> Cutil.no_loc then Target.print_file_line oc (fst loc) (snd loc)
+      if loc <> C.no_loc then Target.print_file_line oc (fst loc) (snd loc)
 
     let print_function oc name fn =
       Hashtbl.clear current_function_labels;

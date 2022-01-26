@@ -115,7 +115,7 @@ let atom_location a =
   try
     (Hashtbl.find decl_atom a).a_loc
   with Not_found ->
-    Cutil.no_loc
+    C.no_loc
 
 (** The current environment of composite definitions *)
 
@@ -127,7 +127,7 @@ let process_pragma_hook = ref (fun (_: string) -> false)
 
 (** ** Error handling *)
 
-let currentLocation = ref Cutil.no_loc
+let currentLocation = ref C.no_loc
 
 let updateLoc l = currentLocation := l
 
@@ -307,7 +307,7 @@ let name_for_string_literal s =
         a_sections = [Sections.for_stringlit()];
         a_access = Sections.Access_default;
         a_inline = No_specifier;
-        a_loc = Cutil.no_loc };
+        a_loc = C.no_loc };
     Hashtbl.add stringTable s id;
     id
 
@@ -340,7 +340,7 @@ let name_for_wide_string_literal s =
         a_sections = [Sections.for_stringlit()];
         a_access = Sections.Access_default;
         a_inline = No_specifier;
-        a_loc = Cutil.no_loc };
+        a_loc = C.no_loc };
     Hashtbl.add wstringTable s id;
     id
 
@@ -1047,20 +1047,20 @@ let rec flattenSwitch = function
   | {sdesc = C.Slabeled(C.Sdefault, s1)} ->
       Label Default :: flattenSwitch s1
   | {sdesc = C.Slabeled(C.Slabel lbl, s1); sloc = loc} ->
-      Stmt {sdesc = C.Slabeled(C.Slabel lbl, Cutil.sskip); sloc = loc}
+      Stmt {sdesc = C.Slabeled(C.Slabel lbl, C.sskip); sloc = loc}
       :: flattenSwitch s1
   | s ->
       [Stmt s]
 
 let rec groupSwitch = function
   | [] ->
-      (Cutil.sskip, [])
+      (C.sskip, [])
   | Label case :: rem ->
       let (fst, cases) = groupSwitch rem in
-      (Cutil.sskip, (case, fst) :: cases)
+      (C.sskip, (case, fst) :: cases)
   | Stmt s :: rem ->
       let (fst, cases) = groupSwitch rem in
-      (Cutil.sseq s.sloc s fst, cases)
+      (C.sseq s.sloc s fst, cases)
 
 (* Test whether the statement contains case and give an *)
 let rec contains_case s =
