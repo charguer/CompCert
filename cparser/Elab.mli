@@ -20,6 +20,10 @@ val generate_static_func_names : bool ref
 val generate_implicit_return_on_main : bool ref
   (* This option allows to deactivate the generation of [return 0] at end of main *)
 
+val allow_variables_as_array_size : bool ref
+  (* This option adds support for referring to const variables in array sizes *)
+
+
 val elab_file : Cabs.definition list -> C.program
   (* This is the main entry point.  It transforms a list of toplevel
      definitions as produced by the parser into a program in C abstract

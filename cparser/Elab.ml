@@ -28,6 +28,8 @@ let generate_static_func_names = ref true
 
 let generate_implicit_return_on_main = ref true
 
+let allow_variables_as_array_size = ref false
+
 (** * Utility functions *)
 
 (* Error reporting  *)
@@ -2595,7 +2597,7 @@ let enter_decdef local nonstatic_inline loc sto (decls, env) (s, ty, init) =
   let is_const = List.mem AConst (attributes_of_type env ty') in
   let is_int = match ty' with TInt _ -> true | _ -> false in
   let env2 =
-    if is_const && is_int && has_init then begin
+    if !allow_variables_as_array_size && is_const && is_int && has_init then begin
       let body = match init' with
         | Some (Init_single e) -> e
         | Some _ -> assert false (* unreachable: const int cannot bind to an array/struct/union *)
