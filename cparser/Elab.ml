@@ -887,10 +887,10 @@ and elab_type_declarator ?(fundef = false) loc env ty = function
                 if n = 0L then warning loc Zero_length_array
                     "zero size arrays are an extension";
                 if not (Cutil.valid_array_size env ty n) then error loc "size of array is too large";
-                Some n
+                Some (n,expr)
             | None ->
                 error loc "size of array is not a compile-time constant";
-                Some 1L (* produces better error messages later *)
+                Some (1L,expr) (* produces better error messages later *)
          in
        elab_type_declarator ~fundef loc env (TArray(ty, sz', a)) d
   | Cabs.PTR(cv_specs, d) ->
@@ -1321,6 +1321,13 @@ let check_init_type loc env a ty =
       "initializer has type %a instead of the expected type %a"
       (print_typ env) a.etyp (print_typ env) ty
 
+(* Auxiliary function to extract the size option from a TArray *)
+
+let tarray_size_get sz =
+   match sz with
+   | None -> None
+   | Some (sz,_exp) -> Some sz
+
 (* Representing initialization state using zippers *)
 
 module I = struct
@@ -1422,6 +1429,7 @@ module I = struct
     let ty = typeof zi in
     match unroll env ty, i with
     | TArray(ty, sz, _), Init_array il ->
+        let sz = tarray_size_get sz in
         if index_below 0L sz then begin
           let dfl = default_init env ty in
           OK(Zarray(z, ty, sz, dfl, [], 0L, il_tail il), il_head dfl il)
@@ -1457,6 +1465,7 @@ module I = struct
   let index env (z, i as zi) n =
     match unroll env (typeof zi), i with
     | TArray(ty, sz, _), Init_array il ->
+        let sz = tarray_size_get sz in
         if n >= 0L && index_below n sz then begin
           let dfl = default_init env ty in
           let rec loop p before after =
@@ -1603,6 +1612,7 @@ and elab_item zi item il =
      | COMPOUND_INIT [_, SINGLE_INIT(CONSTANT (CONST_STRING(w, s)))]),
     TArray(ty_elt, sz, _)
     when is_integer_type env ty_elt ->
+      let sz = tarray_size_get sz in
       begin match elab_string_literal loc w s, unroll env ty_elt with
       | CStr s, TInt((IChar | ISChar | IUChar), _) ->
           if not (I.index_below (Int64.of_int(String.length s - 1)) sz) then
@@ -1704,7 +1714,7 @@ let fixup_typ loc env ty init =
   match unroll env ty, init with
   | TArray(ty_elt, None, attr), Init_array il ->
       if il = [] then warning loc Zero_length_array "zero size arrays are an extension";
-      TArray(ty_elt, Some(Int64.of_int(List.length il)), attr)
+      TArray(ty_elt, Some(Int64.of_int(List.length il), no_exp), attr)
   | _ -> ty
 
 (* Entry point *)
@@ -2489,7 +2499,7 @@ let elab_for_expr ctx loc env = function
 (* Handling of __func__ (section 6.4.2.2) *)
 
 let __func__type_and_init s =
-  (TArray(TInt(IChar, [AConst]), Some(Int64.of_int (String.length s + 1)), []),
+  (TArray(TInt(IChar, [AConst]), Some(Int64.of_int (String.length s + 1), no_exp), []),
    init_char_array_string None s)
 
 

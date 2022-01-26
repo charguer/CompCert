@@ -31,7 +31,7 @@ let rec local_initializer env path init k =
   | Init_array il ->
       let (ty_elt, sz) =
         match unroll env path.etyp with
-        | TArray(ty_elt, Some sz, _) -> (ty_elt, sz)
+        | TArray(ty_elt, Some (sz,_exp), _) -> (ty_elt, sz)
         (* We accept empty array initializer for flexible array members, which
            has size zero *)
         | TArray(ty_elt, None, _) when il = [] -> (ty_elt, 0L)

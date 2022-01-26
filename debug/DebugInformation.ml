@@ -91,16 +91,18 @@ let insert_type ty =
           | TPtr (t,_) ->
               let id = attr_aux t in
               PointerType ({pts = id})
+          | TRef _ -> failwith "insert_type: TRef should have been eliminated"
           | TArray (t,s,_) ->
+              let get = function Some (s,_exp) -> Some s | None -> None in
               let rec size acc t = (match t with
               | TArray (child,s,_) ->
-                  size (s::acc) child
+                  size (get s::acc) child
               | _ -> t,List.rev acc) in
-              let t,s = size [s] t in
+              let t,s = size [get s] t in
               let id = attr_aux t in
               let arr = {
                 arr_type = id;
-                arr_size= s;
+                arr_size = s;
               } in
               ArrayType arr
           | TFun (t,param,_,_) ->

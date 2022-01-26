@@ -550,7 +550,7 @@ let rec convertTyp env ?bitwidth t =
          contexts that are safe for Clight, so just treat as ty[0]. *)
       (* warning "array type of unspecified size"; *)
       Tarray(convertTyp env ty, Z.zero, convertAttr a)
-  | C.TArray(ty, Some sz, a) ->
+  | C.TArray(ty, Some (sz,_exp), a) ->
       Tarray(convertTyp env ty, convertIntZ sz, convertAttr a)
   | C.TFun(tres, targs, va, a) ->
       checkFunctionType env tres targs;

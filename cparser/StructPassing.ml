@@ -96,7 +96,7 @@ let uintptr = TPtr(uint, [])
 let ulonglongptr = TPtr(ulonglong, [])
 
 let ty_buffer n =
-  TArray(uint, Some (Int64.of_int n), [])
+  TArray(uint, Some (Int64.of_int n, Cutil.no_exp), [])
 
 let ebuffer_index base idx =
   { edesc = EBinop(Oindex, base, intconst (Int64.of_int idx) IInt, uintptr);
