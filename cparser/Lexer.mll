@@ -30,7 +30,7 @@ let reserved_keyword loc id =
 
 let () =
   List.iter (fun (key, builder) -> Hashtbl.add lexicon key builder)
-    [ 
+    [
       ("_Alignas", fun loc -> ALIGNAS loc);
       ("_Alignof", fun loc -> ALIGNOF loc);
       ("_Bool", fun loc -> UNDERSCORE_BOOL loc);

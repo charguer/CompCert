@@ -24,6 +24,11 @@ open C
 open Diagnostics
 open! Cutil
 
+let generate_static_func_names = ref true
+
+let set_generate_static_func_names b =
+  generate_static_func_names := b
+
 (** * Utility functions *)
 
 (* Error reporting  *)
@@ -662,7 +667,7 @@ let check_bitfield loc env id ty ik n =
    C99 section 6.7.2.
 *)
 
-let rec elab_specifier ?(only = false) loc env specifier =
+let rec elab_specifier ?(only = false) ?(typedef_name:string option = None) loc env specifier =
   (* We first divide the parts of the specifier as follows:
        - a storage class
        - a set of attributes (const, volatile, restrict)
@@ -708,6 +713,12 @@ let rec elab_specifier ?(only = false) loc env specifier =
   let simple ty =
     restrict_check ty;
     (!sto, !inline, !noreturn ,!typedef, add_attributes_type !attr ty, env) in
+
+  let use_typedef_name_if_none id =
+    match id with
+    | Some _ -> id
+    | None -> typedef_name
+    in
 
   (* Partition !attr into name- and struct-related attributes,
      which are returned, and other attributes, which are left in !attr.
@@ -794,9 +805,10 @@ let rec elab_specifier ?(only = false) loc env specifier =
         let a' =
           add_attributes (get_definition_attrs optmembers)
                          (elab_attributes env a) in
+        let id = use_typedef_name_if_none id in
         let (id', env') =
           elab_struct_or_union only Struct loc id optmembers a' env in
-        let ty =  TStruct(id', !attr) in
+        let ty = TStruct(id', !attr) in
         restrict_check ty;
         (!sto, !inline, !noreturn, !typedef, ty, env')
 
@@ -804,9 +816,10 @@ let rec elab_specifier ?(only = false) loc env specifier =
         let a' =
           add_attributes (get_definition_attrs optmembers)
                          (elab_attributes env a) in
+        let id = use_typedef_name_if_none id in
         let (id', env') =
           elab_struct_or_union only Union loc id optmembers a' env in
-        let ty =  TUnion(id', !attr) in
+        let ty = TUnion(id', !attr) in
         restrict_check ty;
         (!sto, !inline, !noreturn, !typedef, ty, env')
 
@@ -814,6 +827,7 @@ let rec elab_specifier ?(only = false) loc env specifier =
         let a' =
           add_attributes (get_definition_attrs optmembers)
                          (elab_attributes env a) in
+        let id = use_typedef_name_if_none id in
         let (id', env') =
           elab_enum only loc id optmembers a' env in
         let ty = TEnum (id', !attr) in
@@ -2800,11 +2814,15 @@ let elab_fundef genv spec name defs body loc =
     List.fold_left (fun e (sto, id, ty, init) -> Env.add_ident e id sto ty)
                    lenv extra_decls in
   (* Define "__func__" and enter it in the local environment *)
-  let (func_ty, func_init) = __func__type_and_init s in
-  let (func_id, _, lenv, func_ty, _) =
-    enter_or_refine_ident true loc lenv "__func__" Storage_static func_ty in
-  emit_elab ~debuginfo:false lenv loc
-                  (Gdecl(Storage_static, func_id, func_ty, Some func_init));
+  let lenv =
+    if !generate_static_func_names then begin
+      let (func_ty, func_init) = __func__type_and_init s in
+      let (func_id, _, lenv, func_ty, _) =
+        enter_or_refine_ident true loc lenv "__func__" Storage_static func_ty in
+      emit_elab ~debuginfo:false lenv loc
+                      (Gdecl(Storage_static, func_id, func_ty, Some func_init));
+      lenv
+    end else lenv in
   (* Elaborate function body *)
   let body1 = !elab_funbody_f ty_ret vararg (inline && sto <> Storage_static)
                               lenv body in
@@ -2866,8 +2884,12 @@ let elab_fundef genv spec name defs body loc =
 let elab_decdef (for_loop: bool) (local: bool) (nonstatic_inline: bool)
                 (env: Env.t) ((spec, namelist): Cabs.init_name_group)
                 (loc: Cabs.loc) : decl list * Env.t =
+  let typedef_name = (* OptiTrust: for anonymous structures, use the name provided by the associated typedef *)
+    match namelist with
+    | [] -> None
+    | (Init_name(Name(id,_,_,_),_))::_ -> Some id in
   let (sto, inl, noret, tydef, bty, env') =
-    elab_specifier ~only:(namelist=[]) loc env spec in
+    elab_specifier ~only:(namelist=[]) ~typedef_name loc env spec in
   (* Sanity checks on storage class *)
   if tydef then begin
     if sto <> Storage_default then
