@@ -36,6 +36,8 @@ let keep_for_loops_untransformed = ref false
 
 let dont_generate_redundant_forward_typedecl = ref false
 
+let allow_pragma_inside_functions = ref false
+
 (** * Utility functions *)
 
 (* Error reporting  *)
@@ -126,7 +128,7 @@ let elaborated_program () =
   let p = !top_declarations in
   top_declarations := [];
   (* Reverse it and eliminate unreferenced declarations *)
-  List.rev p
+  Cleanup.program p
 
 (* Monadic map for functions env -> 'a -> 'b * env *)
 
@@ -2976,7 +2978,7 @@ let elab_definition (for_loop: bool) (local: bool) (nonstatic_inline: bool)
   (* pragma *)
   | PRAGMA(s, loc) ->
       if local then
-        warning loc Unnamed "pragmas are ignored inside functions"
+          warning loc Unnamed "pragmas are ignored inside functions"
       else
         emit_elab env loc (Gpragma s);
       ([], env)
@@ -3060,6 +3062,7 @@ let check_switch_cases switch_body =
     | Sblock sl -> List.iter check sl
     | Sdecl _ -> ()
     | Sasm _ -> ()
+    | Spragma (_,s1) -> check s1
   in check switch_body
 
 (* Elaboration of statements *)
@@ -3286,6 +3289,15 @@ and elab_block_body env ctx sl =
   match sl with
   | [] ->
       [],env
+  | DEFINITION (PRAGMA(p,loc)) :: s :: sl1 when !allow_pragma_inside_functions ->
+      begin match s with
+      | DEFINITION _def ->
+          failwith "Warning pragma in front of a definition not yet supported"
+      | _ -> ()
+      end;
+      let s',env = elab_stmt env ctx s in
+      let sl1',env = elab_block_body env ctx sl1 in
+      { sdesc = Spragma (p,s'); sloc = elab_loc loc } :: sl1',env
   | DEFINITION def :: sl1 ->
       let (dcl, env') =
         elab_definition false true ctx.ctx_nonstatic_inline env def in
@@ -3333,7 +3345,7 @@ let elab_file prog =
   let elab_def env d = snd (elab_definition false false false env d) in
   ignore (List.fold_left elab_def env prog);
   let p = elaborated_program () in
-
-
-
+  Checks.unused_variables p;
+  Checks.unknown_attrs_program p;
+  Checks.non_linear_conditional p;
   p

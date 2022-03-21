@@ -501,6 +501,8 @@ let rec transf_stmt s =
       {s with sdesc = Sasm(attr, template,
                            List.map transf_asm_operand outputs,
                            List.map transf_asm_operand inputs, clob)}
+  | Spragma(p, s1) ->
+      { s with sdesc = Spragma(p, transf_stmt s1)}
 
 in
   transf_stmt body

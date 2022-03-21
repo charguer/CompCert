@@ -44,6 +44,8 @@ let fold_over_stmt_loc ~(expr: 'a -> location -> exp -> 'a)
     | Sswitch (e, s1) -> fold (expr a s.sloc e) s1
     | Sblock sl -> List.fold_left fold a sl
     | Sdecl d -> decl a s.sloc d
+    | Spragma (p, s1) -> fold a s1
+
   and asm_operands a loc l =
     List.fold_left (fun a (_, _, e) -> expr a loc e) a l
   in fold a s

@@ -182,6 +182,7 @@ and stmt_desc env = function
             List.map (asm_operand env) outputs,
             List.map (asm_operand env) inputs,
             flags)
+  | Spragma(p, s1) -> Spragma(p, stmt env s1)
 
 and stmt_or_decl env s =
   match s.sdesc with

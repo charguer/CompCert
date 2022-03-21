@@ -332,6 +332,8 @@ let rec unblock_stmt env ctx ploc s =
         {s with sdesc = Sasm(attr, template,
                              List.map expand_asm_operand outputs,
                              List.map expand_asm_operand inputs, clob)}
+  | Spragma(p, s1) ->
+      {s with sdesc = Spragma(p, unblock_stmt env ctx ploc s1) }
 
 
 and unblock_block env ctx ploc = function

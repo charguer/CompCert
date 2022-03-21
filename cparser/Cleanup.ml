@@ -106,6 +106,7 @@ let rec add_stmt s =
   | Sasm(attr, template, outputs, inputs, flags) ->
       List.iter add_asm_operand outputs;
       List.iter add_asm_operand inputs
+  | Spragma (p, s1) -> add_stmt s1
 
 let add_fundef f =
   add_typ f.fd_ret;
