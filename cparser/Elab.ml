@@ -28,11 +28,13 @@ let generate_static_func_names = ref true
 
 let generate_implicit_return_on_main = ref true
 
-let allow_variables_as_array_size = ref false
+let allow_generalized_constant_time_constants = ref false
 
 let allow_compound_initializer_in_return = ref false
 
 let keep_for_loops_untransformed = ref false
+
+let dont_generate_redundant_forward_typedecl = ref false
 
 (** * Utility functions *)
 
@@ -105,7 +107,7 @@ let is_global_defined name =
 
 let emit_elab ?(debuginfo = true) ?(linkage = false) env loc td =
   let loc = elab_loc loc in
-  let dec ={ gdesc = td; gloc = loc } in
+  let dec = { gdesc = td; gloc = loc } in
   if debuginfo then Debug.insert_global_declaration env dec;
   top_declarations := dec :: !top_declarations;
   if linkage then begin
@@ -124,7 +126,7 @@ let elaborated_program () =
   let p = !top_declarations in
   top_declarations := [];
   (* Reverse it and eliminate unreferenced declarations *)
-  Cleanup.program p
+  List.rev p
 
 (* Monadic map for functions env -> 'a -> 'b * env *)
 
@@ -810,9 +812,10 @@ let rec elab_specifier ?(only = false) ?(typedef_name:string option = None) loc 
         let a' =
           add_attributes (get_definition_attrs optmembers)
                          (elab_attributes env a) in
+        let named = (id <> None) in
         let id = use_typedef_name_if_none id in
         let (id', env') =
-          elab_struct_or_union only Struct loc id optmembers a' env in
+          elab_struct_or_union ~named only Struct loc id optmembers a' env in
         let ty = TStruct(id', !attr) in
         restrict_check ty;
         (!sto, !inline, !noreturn, !typedef, ty, env')
@@ -1151,7 +1154,7 @@ and elab_struct_or_union_info kind loc env members attrs =
   (* Final result *)
   (composite_info_def env' kind attrs m, env')
 
-and elab_struct_or_union only kind loc tag optmembers attrs env =
+and elab_struct_or_union ?(named:bool=true) only kind loc tag optmembers attrs env =
   let warn_attrs () =
     if attrs <> [] then
       warning loc Ignored_attributes "attribute declaration must precede definition" in
@@ -1205,6 +1208,10 @@ and elab_struct_or_union only kind loc tag optmembers attrs env =
       let (tag', env') = Env.enter_composite env tag ci1 in
       (* emit a declaration so that inner structs and unions can refer to it *)
       emit_elab env' loc (Gcompositedecl(kind, tag', attrs));
+      (* skip the forward declaration if the name does not occur recursively *)
+      (* LATER: may need to be generalized *)
+      if !dont_generate_redundant_forward_typedecl && not named
+        then top_declarations := List.tl !top_declarations;
       (* elaborate the members *)
       let (ci2, env'') =
         elab_struct_or_union_info kind loc env' members attrs in
@@ -1349,7 +1356,7 @@ module I = struct
               * init list               (* elements after point *)
 
     | Zstruct of zipinit                (* ancestor *)
-               * ident                  (* struct type *)
+               * identtyp               (* struct type *)
                * (field * init) list    (* elements before current, reversed *)
                * field                  (* current field *)
                * (field * init) list    (* elements after current *)
@@ -1443,7 +1450,7 @@ module I = struct
     | TStruct(id, _), Init_struct(id', []) ->
         NotFound
     | TStruct(id, _), Init_struct(id', (fld1, i1) :: flds) ->
-        OK(Zstruct(z, id, [], fld1, flds), i1)
+        OK(Zstruct(z, (id,ty), [], fld1, flds), i1)
     | TUnion(id, _), Init_union(id', fld, i) ->
       let rec first_named = function
         | [] -> NotFound
@@ -1509,9 +1516,9 @@ module I = struct
           | [] -> NotFound
           | (fld, i as f_i) :: after ->
               if fld.fld_name = name then
-                OK(Zstruct(z, id, before, fld, after), i)
+                OK(Zstruct(z, (id,ty), before, fld, after), i)
               else if fld.fld_anonymous && has_member env name fld.fld_typ then
-                let zi = (Zstruct(z, id, before, fld, after), i) in
+                let zi = (Zstruct(z, (id,ty), before, fld, after), i) in
                 member env zi name
               else
                 find (f_i :: before) after
@@ -2601,7 +2608,7 @@ let enter_decdef local nonstatic_inline loc sto (decls, env) (s, ty, init) =
   let is_const = List.mem AConst (attributes_of_type env ty') in
   let is_int = match ty' with TInt _ -> true | _ -> false in
   let env2 =
-    if !allow_variables_as_array_size && is_const && is_int && has_init then begin
+    if !allow_generalized_constant_time_constants && is_const && is_int && has_init then begin
       let body = match init' with
         | Some (Init_single e) -> e
         | Some _ -> assert false (* unreachable: const int cannot bind to an array/struct/union *)
@@ -2629,7 +2636,8 @@ let enter_decdef local nonstatic_inline loc sto (decls, env) (s, ty, init) =
     emit_elab ~linkage env2 loc (Gdecl(sto', id, ty', init'));
     (* Make sure the initializer is constant. *)
     begin match init' with
-      | Some i when not (Ceval.is_constant_init env2 i) ->
+      | Some i when not !allow_generalized_constant_time_constants
+                 && not (Ceval.is_constant_init env2 i) ->
         error loc "initializer is not a compile-time constant"
       | _ -> ()
     end;
@@ -3325,7 +3333,7 @@ let elab_file prog =
   let elab_def env d = snd (elab_definition false false false env d) in
   ignore (List.fold_left elab_def env prog);
   let p = elaborated_program () in
-  Checks.unused_variables p;
-  Checks.unknown_attrs_program p;
-  Checks.non_linear_conditional p;
+
+
+
   p

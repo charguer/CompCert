@@ -73,7 +73,7 @@ let rec add_exp e =
 and add_init = function
   | Init_single e -> add_exp e
   | Init_array il -> List.iter add_init il
-  | Init_struct(id, il) -> addref id; List.iter (fun (_, i) -> add_init i) il
+  | Init_struct((id,ty), il) -> addref id; List.iter (fun (_, i) -> add_init i) il
   | Init_union(id, _, i) -> addref id; add_init i
 
 let add_decl (sto, id, ty, init) =

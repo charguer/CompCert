@@ -346,14 +346,14 @@ let transf_init loc env i =
             | TArray(ty_elt, _, _) -> Some ty_elt
             | _ -> assert false in
       Init_array (List.rev (List.rev_map (trinit swap_elt) il))
-  | Init_struct(id, fld_init_list) ->
+  | Init_struct((id,ty), fld_init_list) ->
       let trinit_field (f, i) =
         let swap_f =
           if Hashtbl.mem byteswapped_fields (id, f.fld_name)
           then Some f.fld_typ
           else None in
         (f, trinit swap_f i) in
-      Init_struct(id, List.map trinit_field fld_init_list)
+      Init_struct((id,ty), List.map trinit_field fld_init_list)
   | Init_union(id, fld, i) ->
       Init_union(id, fld, trinit None i)
   in trinit None i
